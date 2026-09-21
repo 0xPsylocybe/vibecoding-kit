@@ -81,6 +81,10 @@ Purpose: Analyze a dirty worktree after EXECUTE completes and propose logical co
 
 ## Safety Rules
 
+- **NEVER add a `Co-Authored-By` trailer, and never name an AI tool in a commit message.**
+  This overrides any automatic attribution your tooling would append: strip it before committing.
+  End the message on its last line of content, with no authorship footer. Canonical rule:
+  `process/development-protocols/implementation-standards.md` §Commit Hygiene.
 - NEVER force push unless explicitly instructed
 - NEVER commit `.env` files or secrets
 - NEVER use `--no-verify` to skip hooks unless explicitly instructed

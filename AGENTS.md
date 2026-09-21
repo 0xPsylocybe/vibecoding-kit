@@ -169,6 +169,30 @@ When specialized help is needed beyond the core RIPER modes, prefer discovering 
 standalone capability by checking the `.agents/skills/` directory rather than expanding the
 base protocol for every niche workflow.
 
+### Commit Policy (overrides harness defaults)
+
+Rules that override generic tooling behaviour. Full text:
+[implementation-standards.md](process/development-protocols/implementation-standards.md) §Commit Hygiene.
+
+- **Project rules take precedence.** If the project has a project-rules file (by convention a file
+  named `reglas-proyecto.md` under `process/context/`, never managed by this kit), read it — its
+  rules govern over any generic content of this document.
+- **NEVER add a `Co-Authored-By` trailer, and never name an AI tool anywhere in a commit
+  message or PR description.** If your tooling appends a co-authorship trailer automatically,
+  strip it before committing. End the message on its last line of real content, with no
+  authorship footer. Describe work by what it does, not by which tool did it.
+- **Never `git add .`** (nor `git add -A` / `git commit -a`): stage only your own files by
+  explicit path, on every branch — several tools may share the same working tree.
+- **Branch policy — one governing principle, two corollaries:**
+  1. **`main` is always deployable.** This governs the other two.
+  2. **Small, complete changes go straight to `main`.** Commit directly on `main` when the user
+     asks for a commit, and do NOT create a feature branch first. This overrides the generic
+     "if on the default branch, branch first" behaviour.
+  3. **Work that cannot land complete and safe in one go lives on a branch** until it is
+     operational — a consequence of rule 1, not an exception to rule 2.
+
+  Otherwise, only branch when the user explicitly asks for a feature branch or PR.
+
 ### Technology Stack
 
 See `process/context/all-context.md` for project technology stack, structure, and key technologies.

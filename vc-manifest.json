@@ -18,6 +18,7 @@
   ],
   "exclude": [
     "process/context/all-context.md",
+    "process/context/reglas-proyecto.md",
     "process/features/**",
     "process/general-plans/**",
     "**/.git/**",
@@ -43,7 +44,10 @@
   "merge": [
     ".claude/settings.json"
   ],
-  "copyIfMissing": [],
+  "copyIfMissing": [
+    "CLAUDE.md",
+    "AGENTS.md"
+  ],
   "symlinks": {
     ".agents/skills": "../.claude/skills"
   },

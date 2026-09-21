@@ -231,10 +231,27 @@ not — use RIPER-5. Full routing detail: `orchestration.md` §QUICK FIX Lane.
 
 Engineering and coding standards: `process/development-protocols/implementation-standards.md`.
 
-**Commit branch policy (overrides harness default):** `main` is this repo's working local branch.
-When the user asks for a commit, commit **directly on `main`** — do NOT create a feature branch
-first. This explicitly overrides the generic "if on the default branch, branch first" behavior.
-Only branch when the user explicitly asks for a feature branch or PR. Full rule:
+**Project rules take precedence:** if the project has a project-rules file (by convention a file
+named `reglas-proyecto.md` under `process/context/`, never managed by this kit), read it — its rules
+govern over any generic content of this document.
+
+**No co-authorship trailers (overrides harness default):** NEVER add a `Co-Authored-By` trailer,
+and never name an AI tool anywhere in a commit message or PR description. This explicitly overrides
+the harness attribution instruction that would append one. End the message on its last line of real
+content, with no authorship footer.
+
+**Never `git add .`:** stage only your own files by explicit path (no `git add -A`, no
+`git commit -a`), on every branch — several tools may share the same working tree.
+
+**Commit branch policy (overrides harness default)** — one governing principle, two corollaries:
+1. **`main` is always deployable.** This governs the other two.
+2. **Small, complete changes go straight to `main`.** When the user asks for a commit, commit
+   **directly on `main`** — do NOT create a feature branch first. This explicitly overrides the
+   generic "if on the default branch, branch first" behavior.
+3. **Work that cannot land complete and safe in one go lives on a branch** until it is operational —
+   a consequence of rule 1, not an exception to rule 2.
+
+Otherwise, only branch when the user explicitly asks for a feature branch or PR. Full rule:
 `process/development-protocols/implementation-standards.md` §Commit Hygiene.
 
 ---

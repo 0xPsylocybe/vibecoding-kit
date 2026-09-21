@@ -61,10 +61,33 @@ See skill: invoke `vc-risk-evidence-pack` for the full 6-class definitions, 5-ar
 - Keep commits focused on the requested change.
 - Never commit secrets or credentials.
 - Use clean professional commit messages, ideally conventional-commit style when it fits the change.
-- **Commit on `main` by default.** This repo's local default branch is `main`; commit directly to it
-  when the user asks for a commit. Do NOT create a feature branch first — this overrides the generic
-  "if on the default branch, branch first" harness default. Only branch when the user explicitly asks
-  for a feature branch or PR.
+- **NEVER add a `Co-Authored-By` trailer, and never name an AI tool anywhere in a commit message or
+  PR description.** This **overrides any default attribution behaviour of the harness or of the
+  underlying tool** — if your tooling appends a co-authorship trailer automatically, remove it before
+  committing. End the message on its last line of real content, with no authorship footer. Describe
+  work by what it does, never by which tool did it.
+- **Never `git add .`, `git add -A` or `git commit -a`.** Stage only your own files, by explicit
+  path, on every branch — several tools may share the same working tree, and a blanket add swallows
+  their uncommitted work.
+
+Branch policy — one governing principle and two corollaries, not three independent rules:
+
+1. **`main` is always deployable.** This is the governing principle; the other two exist to serve it.
+2. **Corollary A — small, complete changes go straight to `main`.** When the user asks for a commit,
+   commit directly on `main` without creating a feature branch first — this overrides the generic
+   "if on the default branch, branch first" harness default. A change that lands complete and safe in
+   one go cannot compromise rule 1, so it needs no branch ceremony.
+3. **Corollary B — work that cannot land complete and safe in one go lives on a branch** until it is
+   operational, precisely so that it never sits half-merged in `main`. This is a consequence of
+   rule 1, not an exception to rule 2: rule 2 only applies when rule 1 is not at risk. Merge `main`
+   into that branch regularly, and name the branch explicitly in every handoff prompt for that work.
+
+Only branch otherwise when the user explicitly asks for a feature branch or PR.
+
+**Project rules take precedence.** If the project declares a project-rules file (by convention a
+file named `reglas-proyecto.md` under `process/context/`), read it: its rules — for example, which concrete long-lived
+branches exist under Corollary B and who merges them — govern over the generic content of this
+document. The harness kit never manages or overwrites that file.
 
 ## Agent Frontmatter Conventions
 
