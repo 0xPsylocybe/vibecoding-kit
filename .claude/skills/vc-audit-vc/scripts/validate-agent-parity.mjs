@@ -27,8 +27,10 @@ function exists(relPath) {
   return fs.existsSync(path.join(root, relPath));
 }
 
+// Normalize CRLF -> LF at the single read point (Windows core.autocrlf=true
+// checkouts otherwise defeat every LF-only regex below).
 function read(relPath) {
-  return fs.readFileSync(path.join(root, relPath), "utf8");
+  return fs.readFileSync(path.join(root, relPath), "utf8").replace(/\r\n/g, "\n");
 }
 
 function listAgentNames(dir, extension) {
@@ -44,16 +46,16 @@ function listAgentNames(dir, extension) {
 function parseClaudeAgent(file) {
   const text = read(file);
   const frontmatter = {};
-  const match = text.match(/^---\n([\s\S]*?)\n---\n?/);
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (match) {
-    for (const line of match[1].split("\n")) {
+    for (const line of match[1].split(/\r?\n/)) {
       const item = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
       if (item) frontmatter[item[1]] = item[2].replace(/^["']|["']$/g, "");
     }
   }
   return {
     description: frontmatter.description || "",
-    body: text.replace(/^---\n[\s\S]*?\n---\n?/, "").trim(),
+    body: text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim(),
   };
 }
 

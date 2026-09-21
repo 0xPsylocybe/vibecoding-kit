@@ -46,7 +46,7 @@ if (exists(contextFile)) {
   // Strip leading YAML frontmatter (---\n...\n---\n) before checking for heading,
   // so files that begin with frontmatter are not falsely flagged.
   const textWithoutFrontmatter = text.startsWith("---")
-    ? text.replace(/^---\n[\s\S]*?\n---\n/, "")
+    ? text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n\s*/, "")
     : text;
   if (!/^#\s+/.test(textWithoutFrontmatter)) fail(`${contextFile} missing top-level heading`);
   for (const section of ["Repository Structure", "Technology Stack"]) {

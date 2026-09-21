@@ -99,7 +99,9 @@ function checkAgent(agentPath) {
 
   let text;
   try {
-    text = fs.readFileSync(agentPath, "utf8");
+    // Normalize CRLF -> LF at the read point (Windows core.autocrlf=true
+    // checkouts otherwise leave stray \r inside parsed field values).
+    text = fs.readFileSync(agentPath, "utf8").replace(/\r\n/g, "\n");
   } catch (e) {
     globalFailures.push(`${rel}: cannot read file — ${e.message}`);
     agentFailures++;

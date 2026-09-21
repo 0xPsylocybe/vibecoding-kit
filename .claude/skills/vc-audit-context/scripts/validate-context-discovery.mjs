@@ -26,15 +26,17 @@ function exists(relPath) {
   return fs.existsSync(path.join(root, relPath));
 }
 
+// Normalize CRLF -> LF at the single read point (Windows core.autocrlf=true
+// checkouts otherwise defeat every LF-only regex below).
 function read(relPath) {
-  return fs.readFileSync(path.join(root, relPath), "utf8");
+  return fs.readFileSync(path.join(root, relPath), "utf8").replace(/\r\n/g, "\n");
 }
 
 function walk(dir, predicate, out = []) {
   const abs = path.join(root, dir);
   if (!fs.existsSync(abs)) return out;
   for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
-    const rel = path.join(dir, entry.name);
+    const rel = `${dir}/${entry.name}`;
     if (entry.isDirectory()) walk(rel, predicate, out);
     else if (!predicate || predicate(rel)) out.push(rel);
   }

@@ -35,7 +35,9 @@ function walk(dir, out = []) {
   const abs = path.join(root, dir);
   if (!fs.existsSync(abs)) return out; // never throw on missing root
   for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
-    const rel = path.join(dir, entry.name);
+    // Always use POSIX separators so bucketOf()'s "/active/" etc. matching works on
+    // Windows (path.join would yield backslashes and never match the bucket regexes).
+    const rel = `${dir}/${entry.name}`;
     if (entry.isDirectory()) walk(rel, out);
     else out.push(rel);
   }
@@ -131,6 +133,8 @@ const seen = new Set();
 function add(relPath) {
   if (seen.has(relPath)) return;
   if (!relPath.endsWith(".md")) return;
+  // Skip leading-underscore meta/guide files (e.g. `_GUIDE.md`) — not plan artifacts.
+  if (path.basename(relPath).startsWith("_")) return;
   const b = bucketOf(relPath);
   if (!b) return;
   seen.add(relPath);

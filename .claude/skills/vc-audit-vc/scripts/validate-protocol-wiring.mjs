@@ -28,7 +28,7 @@ function walk(dir, predicate, out = []) {
   const abs = path.join(root, dir);
   if (!fs.existsSync(abs)) return out;
   for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
-    const rel = path.join(dir, entry.name);
+    const rel = `${dir}/${entry.name}`;
     if (entry.isDirectory()) walk(rel, predicate, out);
     else if (!predicate || predicate(rel)) out.push(rel);
   }
@@ -84,7 +84,7 @@ if (exists(allProtocolsFile)) {
     // Check: if any parent path segment of this file is referenced in all-development-protocols.md
     // (e.g. vc-system-behavior/01-overview.md is covered by the `vc-system-behavior/` folder entry).
     const relToProtocolDir = path.relative(protocolDir, path.join(protocolDir, path.relative(protocolDir, path.join(root, protocolDir, path.relative(`${protocolDir}/`, file)))));
-    const segments = file.replace(`${protocolDir}/`, "").split(path.sep);
+    const segments = file.replace(`${protocolDir}/`, "").split("/");
     if (segments.length > 1) {
       // Subdir file: covered if the subdir name appears in the router doc
       const subdirRef = segments[0] + "/";

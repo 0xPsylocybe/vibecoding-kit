@@ -22,8 +22,10 @@ function exists(relPath) {
   return fs.existsSync(abs(relPath));
 }
 
+// Normalize CRLF -> LF at the single read point (Windows core.autocrlf=true
+// checkouts otherwise defeat every LF-only regex below).
 function read(relPath) {
-  return fs.readFileSync(abs(relPath), "utf8");
+  return fs.readFileSync(abs(relPath), "utf8").replace(/\r\n/g, "\n");
 }
 
 function parseFrontmatter(file) {

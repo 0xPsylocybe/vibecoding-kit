@@ -19,8 +19,11 @@ export function exists(relPath) {
   return fs.existsSync(abs(relPath));
 }
 
+// Normalize CRLF -> LF at the single read point. On Windows checkouts with
+// core.autocrlf=true the working tree has \r\n, which breaks every LF-only
+// regex downstream (frontmatter delimiters, block comparisons).
 export function read(relPath) {
-  return fs.readFileSync(abs(relPath), "utf8");
+  return fs.readFileSync(abs(relPath), "utf8").replace(/\r\n/g, "\n");
 }
 
 export function parseFrontmatterText(text) {

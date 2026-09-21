@@ -27,7 +27,9 @@ function walk(dir, predicate, out = []) {
   const abs = path.join(root, dir);
   if (!fs.existsSync(abs)) return out;
   for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
-    const rel = path.join(dir, entry.name);
+    // Always use POSIX separators so downstream "/active/" / "/completed/" matching
+    // works on Windows (path.join would yield backslashes and never match).
+    const rel = `${dir}/${entry.name}`;
     if (entry.isDirectory()) walk(rel, predicate, out);
     else if (!predicate || predicate(rel)) out.push(rel);
   }
@@ -51,8 +53,14 @@ const allPlans = [
   ...walk("process/features", (rel) => rel.endsWith(".md")),
 ].sort();
 
-const activePlans = allPlans.filter((file) => file.includes("/active/"));
-const completedPlans = allPlans.filter((file) => file.includes("/completed/"));
+// Exclude leading-underscore meta files (e.g. `_GUIDE.md`) — they are folder guides,
+// never plan artifacts, so they must not be counted or content-checked as plans.
+const activePlans = allPlans.filter(
+  (file) => file.includes("/active/") && !path.basename(file).startsWith("_"),
+);
+const completedPlans = allPlans.filter(
+  (file) => file.includes("/completed/") && !path.basename(file).startsWith("_"),
+);
 const duplicateNames = new Map();
 
 const samples = {
