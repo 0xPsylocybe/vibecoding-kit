@@ -521,7 +521,10 @@ function sanitizePath(pathValue, projectRoot) {
 
   // Prevent path traversal outside project (../ attacks)
   // But allow if user explicitly set absolute path
-  if (!resolved.startsWith(projectRoot + path.sep) && resolved !== projectRoot) {
+  // Compare against the RESOLVED root: on Windows getGitRoot() returns "C:/..." while
+  // path.resolve yields "C:\\...", so the raw prefix check rejected every relative path.
+  const root = path.resolve(projectRoot);
+  if (!resolved.startsWith(root + path.sep) && resolved !== root) {
     // This is a relative path trying to escape - block it
     return null;
   }

@@ -114,6 +114,10 @@ function isDotfile(filename) {
  * Dotfile-targeted patterns (containing /.??* or explicit dotfile names after /**)
  * are resolved by walking the directory tree instead.
  */
+function toPosix(p) {
+  return p.split(path.sep).join("/");
+}
+
 function resolveGlobPatterns(patterns) {
   const matches = new Set();
 
@@ -148,7 +152,10 @@ function resolveGlobPatterns(patterns) {
       continue;
     }
     for (const p of results) {
-      matches.add(p);
+      // fs.globSync returns "\\"-separated paths on Windows; the manifest, the merge/exclude
+      // checks and .vc-installed-files all use "/". Without this, install.sh overwrote the
+      // user's .claude/settings.json (merge match failed) and excludes never applied.
+      matches.add(toPosix(p));
     }
   }
 
@@ -285,7 +292,7 @@ function resolveGlob() {
       const fullPath = path.join(rootDir, p);
       try {
         if (fs.statSync(fullPath).isFile()) {
-          copyIfMissingResolved.push(p);
+          copyIfMissingResolved.push(toPosix(p));
         }
       } catch {
         // skip

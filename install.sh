@@ -72,7 +72,9 @@ else
 fi
 
 # Read version from manifest
-VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$VC_INSTALL_TMPDIR/vc-manifest.json','utf8')).version)" 2>/dev/null || echo "unknown")
+# Path passed as an argument, not inside the JS source: Git Bash (MSYS) only translates
+# /tmp/... into a Windows path for standalone arguments, so native node.exe can open it.
+VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')).version)" "$VC_INSTALL_TMPDIR/vc-manifest.json" 2>/dev/null || echo "unknown")
 echo "  Kit version: $VERSION"
 echo ""
 
