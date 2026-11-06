@@ -117,6 +117,40 @@ function isPrivacySensitive(testPath) {
   return false;
 }
 
+// Path-like token containing ".env". Shell separators, quotes, redirections, "=" and
+// parentheses end a token, so FILE=.env, $(cat .env) and "path/.env" all yield the path.
+const ENV_TOKEN = /[^\s'"`;|&<>()=,]*\.env[^\s'"`;|&<>()=,]*/g;
+
+/**
+ * Extract .env-like file paths from a shell command.
+ *
+ * Why the member-access rule: `node -e "s.env.X"` or `process.env.HOME` used to be read
+ * as a `.env.X` file and blocked. A ".env" glued to an identifier AND followed by
+ * ".", "[" or ")" looks like property access, so it is skipped — unless a file with that
+ * exact name exists, so a real `config.env.local` stays protected. Everything else
+ * (.env, .env.local, /app/.env, prod.env) is still extracted as before.
+ *
+ * @param {string} command - Bash command
+ * @param {string} [cwd] - Directory used to check whether a member-access token is a real file
+ * @returns {string[]} candidate paths
+ */
+function extractEnvTokens(command, cwd = process.cwd()) {
+  const found = [];
+  for (const match of command.matchAll(ENV_TOKEN)) {
+    const token = match[0];
+    const envAt = token.search(/\.env/);
+    const before = token[envAt - 1];
+    const after = token[envAt + 4] ?? command[match.index + token.length];
+    const looksLikeMemberAccess = before !== undefined && /[\w$\])]/.test(before)
+      && after !== undefined && /[.[)]/.test(after);
+    if (looksLikeMemberAccess && !fs.existsSync(path.resolve(cwd, token))) continue;
+    // Emit from ".env" on, as before: PRIVACY_PATTERNS key on names starting with ".env"
+    // (config.env.local as a whole would match none of them and slip through).
+    found.push(token.slice(envAt));
+  }
+  return found;
+}
+
 /**
  * Extract paths from tool input
  * @param {Object} toolInput - Tool input object with file_path, path, pattern, or command
@@ -138,22 +172,7 @@ function extractPaths(toolInput) {
 
     // Only look for .env if no APPROVED: version found
     if (approvedMatch.length === 0) {
-      const envMatch = toolInput.command.match(/\.env[^\s]*/g) || [];
-      envMatch.forEach(p => paths.push({ value: p, field: 'command' }));
-
-      // Also check bash variable assignments (FILE=.env, ENV_FILE=.env.local)
-      const varAssignments = toolInput.command.match(/\w+=[^\s]*\.env[^\s]*/g) || [];
-      varAssignments.forEach(a => {
-        const value = a.split('=')[1];
-        if (value) paths.push({ value, field: 'command' });
-      });
-
-      // Check command substitution containing sensitive patterns - extract .env from inside
-      const cmdSubst = toolInput.command.match(/\$\([^)]*?(\.env[^\s)]*)[^)]*\)/g) || [];
-      for (const subst of cmdSubst) {
-        const inner = subst.match(/\.env[^\s)]*/);
-        if (inner) paths.push({ value: inner[0], field: 'command' });
-      }
+      extractEnvTokens(toolInput.command).forEach(value => paths.push({ value, field: 'command' }));
     }
   }
 
@@ -279,6 +298,7 @@ module.exports = {
   stripApprovalPrefix,
   isSuspiciousPath,
   extractPaths,
+  extractEnvTokens,
   isPrivacyBlockDisabled,
   buildPromptData,
 
