@@ -12,15 +12,44 @@ metadata:
 # Phase NN — {Phase Title}
 
 **Program:** {program-slug}
-**Umbrella plan:** process/features/{feature}/active/{program-slug}-umbrella_{dd-mm-yy}/{program-slug}-umbrella_PLAN_{dd-mm-yy}.md
-**Phase status:** ⏳ PLANNED
+**Umbrella plan:** process/features/{feature}/active/{program-slug}_{dd-mm-yy}/{program-slug}-umbrella_PLAN_{dd-mm-yy}.md (flat in the program task folder)
+**Date**: {dd-mm-yy}
+**Status**: ⏳ PLANNED
+**Complexity**: {SIMPLE | COMPLEX}
 **Report destination:** process/features/{feature}/active/{program-slug}_{dd-mm-yy}/phase-NN-{slug}_REPORT_{dd-mm-yy}.md (flat in the program task folder)
+**Context:** process/context/all-context.md (route to the relevant group before RESEARCH); testing context: process/context/tests/all-tests.md
 
 ---
 
 ## Purpose
 
 {One paragraph describing what this phase achieves and why it exists in the program sequence.}
+
+---
+
+## Overview
+
+{2-4 bullets: the deliverables of this phase and how they connect to the previous and next phases.}
+
+---
+
+## Acceptance Criteria
+
+- [ ] {criterion 1 — observable, verifiable outcome (cite the program SPEC AC id if one exists)}
+- [ ] {criterion 2}
+
+---
+
+## Phase Completion Rules
+
+This phase is NOT complete until:
+
+1. **Exit Gate green** — every command in `## Exit Gate` passes
+2. **Acceptance Criteria met** — each criterion above checked with evidence
+3. **EVL confirmed** — independent gate re-run (Phase Loop Progress step 6)
+4. **Phase report written** — at the report destination above
+
+Status meanings: ⏳ PLANNED · 🔨 CODE DONE · 🧪 TESTING · ✅ VERIFIED (only after user confirmation) · 🚧 BLOCKED
 
 ---
 

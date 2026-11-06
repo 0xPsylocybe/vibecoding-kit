@@ -61,7 +61,7 @@ Hard safety constraints (non-negotiable, per phase):
 
 ```
 SESSION GOAL: {feature} — {Program Name}
-Ref: process/features/{feature}/active/{program-slug}-umbrella_{dd-mm-yy}/{program-slug}-umbrella_PLAN_{dd-mm-yy}.md
+Ref: process/features/{feature}/active/{program-slug}_{dd-mm-yy}/{program-slug}-umbrella_PLAN_{dd-mm-yy}.md
 
 TARGET: Complete ALL phases until:
 - {exit condition 1 — e.g. all validators exit 0}
@@ -180,7 +180,7 @@ During /goal execution of a phase program:
 
 | Phase | Report path (inside task folder) |
 |---|---|
-| 0 (pre-program) | `process/features/{feature}/active/{program-slug}-umbrella_{dd-mm-yy}/phase-00-{slug}_REPORT_{dd-mm-yy}.md` |
+| 0 (pre-program) | `process/features/{feature}/active/{program-slug}_{dd-mm-yy}/phase-00-{slug}_REPORT_{dd-mm-yy}.md` |
 | 1 — {Name} | `process/features/{feature}/active/{program-slug}_{dd-mm-yy}/phase-01-{slug}_REPORT_{dd-mm-yy}.md` |
 | 2 — {Name} | `process/features/{feature}/active/{program-slug}_{dd-mm-yy}/phase-02-{slug}_REPORT_{dd-mm-yy}.md` |
 | 3 — {Name} | `process/features/{feature}/active/{program-slug}_{dd-mm-yy}/phase-03-{slug}_REPORT_{dd-mm-yy}.md` |

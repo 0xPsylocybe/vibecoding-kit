@@ -70,7 +70,7 @@ plan artifacts yet. Stop and wait for user approval.
 - feature folder under `process/features/{feature}/` with subdirs `active/`, `completed/`, `backlog/` (no `reports/` or `references/` — new repos omit these deprecated sibling dirs)
 - ONE program task folder in `active/`: `active/{program-slug}_{date}/` holding the umbrella `_PLAN_`, every phase `_PLAN_`, every phase `_REPORT_`, the phase registry, and `_REF_` files — all FLAT (no per-phase subfolders)
 - the umbrella/orchestration plan: `active/{program-slug}_{date}/{program-slug}-umbrella_PLAN_{date}.md` — the filename MUST carry the literal `umbrella` token (enforced by `validate-plan-artifact.mjs` and `validate-umbrella-artifact.mjs` for any plan whose frontmatter declares `phase: umbrella`)
-- one direct phase plan per phase, FLAT in the same program folder: `active/{program-slug}_{date}/phase-NN-{slug}_PLAN_{date}.md`
+- one direct phase plan per phase, FLAT in the same program folder: `active/{program-slug}_{date}/phase-NN-{slug}_PLAN_{date}.md` — because it is a `_PLAN_` file it MUST pass BOTH `validate-phase-stub.mjs` AND `validate-plan-artifact.mjs` (the PostToolUse plan hook runs the latter on every `_PLAN_` write); the phase-stub template already carries every field both require (`**Date**`, `**Status**`, `**Complexity**`, `## Overview`, `## Acceptance Criteria`, `## Phase Completion Rules`) — keep them when filling it in
 
 Per **task-folder artefact colocation**, the umbrella plan, every phase plan, the phase registry, and all reports/references each live FLAT INSIDE the ONE program task folder; never write program artefacts to the deprecated sibling `reports/` or `references/` dirs, and never create per-phase subfolders. The whole program folder moves as a unit on completion.
 
@@ -189,6 +189,10 @@ Two copy-pasteable template files exist for generating structurally correct arti
 
 The template files are the source of truth for required sections and placeholder wording. Do not reconstruct structure from memory.
 
+Regression check for the phase-stub template and its `pass.md` fixture (renders both inside a temporary
+`process/features/*/active/` folder and requires zero failures from both validators):
+`node .claude/skills/vc-generate-phase-program/scripts/test-phase-stub-template.mjs`
+
 ---
 
 ## Kickoff Recommendation Format
@@ -219,7 +223,7 @@ pastes to start an unattended, long-running session. Keep it to roughly 8-12 lin
 
 ```text
 SESSION GOAL: [PROGRAM NAME]
-Charter + umbrella plan: process/features/{feature}/active/{program-slug}-umbrella_{date}/{program-slug}-umbrella_PLAN_{date}.md
+Charter + umbrella plan: process/features/{feature}/active/{program-slug}_{date}/{program-slug}-umbrella_PLAN_{date}.md
 Autonomy: Run autonomously under this persistent goal. Execute phases on your own
 recommendation via the 7-step inner loop `R → I → P → PVL → E → EVL → UP` in phase-programs.md
 (the inner loop SKIPS SPEC); report conflicts, errors, and learnings in the phase report (the

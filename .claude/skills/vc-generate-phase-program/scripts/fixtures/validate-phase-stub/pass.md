@@ -6,11 +6,30 @@ phase: "phase-05"
 
 # Phase 5 — Inner Loop Machinery (stub)
 
-Umbrella plan: ../vc-system-implementation-umbrella_PLAN_09-06-26.md
+Umbrella plan: vc-system-implementation-umbrella_PLAN_09-06-26.md (same program task folder, flat)
+**Date**: 09-06-26
+**Status**: ⏳ PLANNED
+**Complexity**: COMPLEX
 
 ## Objective
 
 Wire the canonical 7-step inner loop into the phase-program machinery.
+
+## Overview
+
+- Adds the inner-loop wiring that later phases rely on.
+
+## Acceptance Criteria
+
+- [ ] All seven inner-loop steps are wired and reachable.
+
+## Phase Completion Rules
+
+This phase is NOT complete until the Exit Gate is green and the phase report is written.
+
+## Implementation Checklist
+
+- [ ] A1. Wire the loop steps.
 
 ## Phase Loop Progress
 
@@ -34,4 +53,4 @@ Net verdict: pending.
 
 ## Exit Gate
 
-All loop steps wired and green.
+All loop steps wired and green (Verification: validators exit 0).

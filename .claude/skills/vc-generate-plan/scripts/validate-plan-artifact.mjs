@@ -117,7 +117,10 @@ function validatePlan(relPath) {
   }
 
   const directPlan = isDirectPlanArtifact(name);
-  const legacyPlan = isLegacyPlanShape(name);
+  // A `_PLAN_` file is a direct plan even when it starts with `phase-`: the canonical
+  // phase-program stub name is `phase-NN-{slug}_PLAN_{date}.md`, so the legacy heuristic
+  // must only apply to bare PLAN.md / phase-*.md files without the `_PLAN_` token.
+  const legacyPlan = !directPlan && isLegacyPlanShape(name);
   if (directPlan) {
     if (!hasSection(text, "Touchpoints")) warn(`${relPath} is missing Touchpoints section`);
     if (!hasSection(text, "Public Contracts")) warn(`${relPath} is missing Public Contracts section`);
