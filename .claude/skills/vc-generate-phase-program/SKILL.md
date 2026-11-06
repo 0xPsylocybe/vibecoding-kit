@@ -193,6 +193,10 @@ Regression check for the phase-stub template and its `pass.md` fixture (renders 
 `process/features/*/active/` folder and requires zero failures from both validators):
 `node .claude/skills/vc-generate-phase-program/scripts/test-phase-stub-template.mjs`
 
+Regression check for the umbrella `## Stable Program Goal` length rule (the validator measures the
+first fenced block's content — what gets pasted as /goal — or the section text when unfenced):
+`node .claude/skills/vc-generate-phase-program/scripts/test-umbrella-goal-length.mjs`
+
 ---
 
 ## Kickoff Recommendation Format

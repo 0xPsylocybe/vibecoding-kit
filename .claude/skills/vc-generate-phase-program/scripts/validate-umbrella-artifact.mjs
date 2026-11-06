@@ -38,6 +38,49 @@ function hasSection(text, name) {
   return new RegExp(`^##\\s+${name}\\b`, "im").test(text);
 }
 
+/**
+ * Return the text a user would paste as /goal from `## Stable Program Goal`.
+ *
+ * Line-based on purpose: the previous multiline regex let `$` match at the end of
+ * the first line, so a blank line after the heading measured 0 chars and an
+ * oversize fenced block always passed. Fence-aware so a `## ` or `---` inside the
+ * code block does not end the section early.
+ *
+ * @returns {{ content: string, fenced: boolean }} first fenced block's inner text
+ *   when the section has one (that is what gets pasted), else the trimmed section.
+ */
+function extractStableGoalBlock(text) {
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((l) => /^##\s+Stable Program Goal\b/i.test(l));
+  if (start === -1) return { content: "", fenced: false };
+
+  const section = [];
+  let fence = null; // opening fence marker while inside a code block
+  for (const line of lines.slice(start + 1)) {
+    const marker = line.match(/^\s*(`{3,}|~{3,})/);
+    if (marker) {
+      if (!fence) fence = marker[1];
+      else if (marker[1][0] === fence[0] && marker[1].length >= fence.length) fence = null;
+    } else if (!fence && (/^##\s/.test(line) || /^---\s*$/.test(line))) {
+      break;
+    }
+    section.push(line);
+  }
+
+  const open = section.findIndex((l) => /^\s*(`{3,}|~{3,})/.test(l));
+  if (open !== -1) {
+    const openMarker = section[open].trim().match(/^(`{3,}|~{3,})/)[1];
+    const rest = section.slice(open + 1);
+    const close = rest.findIndex((l) => {
+      const m = l.trim().match(/^(`{3,}|~{3,})\s*$/);
+      return m && m[1][0] === openMarker[0] && m[1].length >= openMarker.length;
+    });
+    const inner = close === -1 ? rest : rest.slice(0, close);
+    return { content: inner.join("\n").trim(), fenced: true };
+  }
+  return { content: section.join("\n").trim(), fenced: false };
+}
+
 function isUmbrellaActivePath(relPath) {
   return (
     /^process\/features\/[^/]+\/active\//.test(relPath) ||
@@ -102,13 +145,12 @@ function validateUmbrella(relPath) {
   if (!hasSection(text, "Stable Program Goal")) {
     fail(`${relPath} missing '## Stable Program Goal' section`);
   } else {
-    // Check /goal block length ≤ 4000 chars
-    const stableGoalMatch = text.match(/^## Stable Program Goal\b.*?\n([\s\S]*?)(?=\n## |\n---\n|$)/im);
-    if (stableGoalMatch) {
-      const goalContent = stableGoalMatch[1];
-      if (goalContent.length > 4000) {
-        fail(`${relPath} Stable Program Goal section content exceeds 4000 chars (${goalContent.length} chars)`);
-      }
+    // Check /goal block length ≤ 4000 chars (the /goal command rejects longer blocks)
+    const goal = extractStableGoalBlock(text);
+    if (goal.content.length === 0) {
+      fail(`${relPath} Stable Program Goal section is empty — it must hold the copy-pasteable /goal block`);
+    } else if (goal.content.length > 4000) {
+      fail(`${relPath} Stable Program Goal ${goal.fenced ? "fenced /goal block" : "section content"} exceeds 4000 chars (${goal.content.length} chars)`);
     }
   }
 
