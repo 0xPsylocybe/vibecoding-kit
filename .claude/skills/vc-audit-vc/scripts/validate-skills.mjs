@@ -2,7 +2,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
-import { parseFrontmatter, listSkillDirs, exists, abs } from "../../vc-audit-context/scripts/shared-skill-utils.mjs";
+import {
+  parseFrontmatter,
+  listSkillDirs,
+  exists,
+  abs,
+  inspectAgentsSkillsMirror,
+  classifyAgentsSkillsMirror,
+} from "../../vc-audit-context/scripts/shared-skill-utils.mjs";
 
 let root;
 try {
@@ -46,16 +53,10 @@ if (!fs.existsSync(skillsDir)) {
   fail(".claude/skills missing");
 }
 
-const agentsSkills = path.join(root, ".agents/skills");
-if (!fs.existsSync(agentsSkills)) {
-  fail(".agents/skills missing");
-} else if (fs.existsSync(skillsDir)) {
-  const source = fs.realpathSync(skillsDir);
-  const discovered = fs.realpathSync(agentsSkills);
-  if (source !== discovered) {
-    fail(".agents/skills does not resolve to .claude/skills");
-  }
-}
+// Symlink, Windows junction or identical copy (Windows without Developer Mode) — shared verdict.
+const mirrorVerdict = classifyAgentsSkillsMirror(inspectAgentsSkillsMirror(root));
+if (mirrorVerdict.level === "fail") fail(mirrorVerdict.message);
+else if (mirrorVerdict.level === "warn") warn(mirrorVerdict.message);
 
 const skillNames = listSkillDirs();
 

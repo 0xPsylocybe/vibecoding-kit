@@ -26,6 +26,10 @@ Optional input: a context group, agent, skill, or folder scope to prioritize dur
    ```bash
    node .claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs
    ```
+   `.agents/skills` may be a symlink, a Windows junction, or — on Windows without Developer Mode —
+   a real-directory copy: an identical copy passes, a stale copy fails, leftover files only warn
+   (shared logic in `scripts/shared-skill-utils.mjs`, also used by `vc-audit-vc/scripts/validate-skills.mjs`;
+   regression test: `node .claude/skills/vc-audit-context/scripts/test-agents-skills-mirror.mjs`).
 3a. Run the protocol discovery frontmatter validator (enforces discovery frontmatter on every
    `process/development-protocols/**/*.md`, recursive incl. `vc-system-behavior/`; `note.md` is the
    only intentional exclusion):

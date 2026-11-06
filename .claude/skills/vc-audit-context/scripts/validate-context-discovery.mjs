@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { inspectAgentsSkillsMirror, classifyAgentsSkillsMirror } from "./shared-skill-utils.mjs";
 
 let root;
 try {
@@ -106,14 +107,10 @@ function normalizeForParity(text) {
   return text.replace(/\r\n/g, "\n").replace(/[ \t]+$/gm, "").trim();
 }
 
-const agentsSkills = path.join(root, ".agents/skills");
-if (!fs.existsSync(agentsSkills)) {
-  fail(".agents/skills missing");
-} else {
-  const real = fs.realpathSync(agentsSkills);
-  const expected = fs.realpathSync(path.join(root, ".claude/skills"));
-  if (real !== expected) fail(".agents/skills does not resolve to .claude/skills");
-}
+// Symlink, Windows junction or identical copy (Windows without Developer Mode) — shared verdict.
+const mirrorVerdict = classifyAgentsSkillsMirror(inspectAgentsSkillsMirror(root));
+if (mirrorVerdict.level === "fail") fail(mirrorVerdict.message);
+else if (mirrorVerdict.level === "warn") warn(mirrorVerdict.message);
 
 for (const skill of ["vc-audit-context", "vc-audit-plans", "vc-generate-context", "vc-generate-plan"]) {
   const file = `.claude/skills/${skill}/SKILL.md`;
