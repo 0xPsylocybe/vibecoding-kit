@@ -150,7 +150,9 @@ function matchPath(matcher, testPath) {
   }
 
   // Empty, "." or ".." after normalization = not a blockable path
-  if (!normalized || normalized === '.' || normalized === '..') {
+  // (normalize keeps a trailing slash, so ".//./" becomes "./")
+  const bare = normalized.replace(/\/+$/, '');
+  if (!bare || bare === '.' || bare === '..') {
     return { blocked: false };
   }
 
