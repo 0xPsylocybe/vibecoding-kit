@@ -163,6 +163,37 @@ function findProjectCkignore(startDir, configDirName) {
   return fs.existsSync(legacyCandidate) ? legacyCandidate : null;
 }
 
+/**
+ * Convert an absolute path into a path relative to the project root.
+ *
+ * Why: patterns are evaluated against the path *inside* the project. Matching the
+ * raw absolute path also tests the folders above the root, so a project living in
+ * e.g. /srv/build/app would have every file blocked by the "build" pattern. On
+ * Windows the raw "C:/..." path additionally makes the 'ignore' lib throw.
+ *
+ * Relative paths and paths outside the root are returned unchanged (matchPath
+ * still normalizes them). The root itself maps to '' (never blocked).
+ *
+ * @param {string} p - Extracted path (may be absolute, Windows or Git Bash style)
+ * @param {string|null} projectRoot - Absolute project root (git root)
+ * @returns {string}
+ */
+function toProjectRelativePath(p, projectRoot) {
+  if (!projectRoot || !p || typeof p !== 'string') return p;
+
+  let candidate = p;
+  // Git Bash / MSYS style "/c/Users/..." -> "c:/Users/..." so win32 path math works
+  if (process.platform === 'win32') {
+    candidate = candidate.replace(/^\/([A-Za-z])(\/|$)/, '$1:/');
+  }
+  if (!path.isAbsolute(candidate)) return p;
+
+  const rel = path.relative(projectRoot, candidate);
+  // Outside the root (or on another drive, where relative() stays absolute)
+  if (rel.startsWith('..') || path.isAbsolute(rel)) return p;
+  return rel.replace(/\\/g, '/');
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN ENTRY POINT
 // ═══════════════════════════════════════════════════════════════════════════
@@ -268,9 +299,10 @@ function checkScoutBlock({ toolName, toolInput, options = {} }) {
     return { blocked: false };
   }
 
-  // Check each path against patterns
+  // Check each path against patterns, relative to the project root
+  const projectRoot = findGitRoot(cwd) || (cwd ? path.resolve(cwd) : null);
   for (const extractedPath of extractedPaths) {
-    const result = matchPath(matcher, extractedPath);
+    const result = matchPath(matcher, toProjectRelativePath(extractedPath, projectRoot));
     if (result.blocked) {
       return {
         blocked: true,
@@ -304,6 +336,7 @@ module.exports = {
   unwrapShellExecutor,
   findGitRoot,
   findProjectCkignore,
+  toProjectRelativePath,
 
   // Re-export scout-block modules for direct access
   loadPatterns,

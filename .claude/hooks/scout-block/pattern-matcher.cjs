@@ -135,6 +135,11 @@ function matchPath(matcher, testPath) {
     normalized = normalized.slice(2);
   }
 
+  // Strip a Windows drive letter ("C:/..." or bare "C:"): on win32 the vendored
+  // 'ignore' lib throws on drive-letter paths instead of matching them, and the
+  // hook fails open — so an un-relativized Windows path would bypass every block.
+  normalized = normalized.replace(/^[A-Za-z]:(\/|$)/, '/');
+
   // Strip leading / for absolute paths (ignore lib requires relative paths)
   while (normalized.startsWith('/')) {
     normalized = normalized.slice(1);
