@@ -45,6 +45,15 @@ check('drive path to source file is allowed',
 check('bare drive is allowed (no throw)',
   () => matchPath(matcher, 'C:').blocked, false);
 
+// --- odd relative inputs seen in real hook logs (each used to crash) --------
+for (const odd of ['.', '..', '././/././/|from ', './/./']) {
+  check(`odd input ${JSON.stringify(odd)} does not throw`, () => matchPath(matcher, odd).blocked, false);
+}
+check('repeated ./ before node_modules is still blocked',
+  () => matchPath(matcher, '././/node_modules/x').blocked, true);
+check('inner .. resolving into node_modules is blocked',
+  () => matchPath(matcher, 'src/../node_modules/x').blocked, true);
+
 // --- full checkScoutBlock flow with a real project root ---------------------
 // Root deliberately lives under a "build" folder: before the fix every file in
 // it was blocked because the absolute path contained "/build/".

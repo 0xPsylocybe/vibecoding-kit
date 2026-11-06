@@ -130,15 +130,14 @@ function matchPath(matcher, testPath) {
   // Normalize path separators (Windows backslash to forward slash)
   let normalized = testPath.replace(/\\/g, '/');
 
-  // Remove leading ./ if present
-  if (normalized.startsWith('./')) {
-    normalized = normalized.slice(2);
-  }
-
   // Strip a Windows drive letter ("C:/..." or bare "C:"): on win32 the vendored
   // 'ignore' lib throws on drive-letter paths instead of matching them, and the
   // hook fails open — so an un-relativized Windows path would bypass every block.
   normalized = normalized.replace(/^[A-Za-z]:(\/|$)/, '/');
+
+  // Collapse "./", "//" and inner ".." ("././/a" -> "a"): 'ignore' throws on any
+  // path starting with "./", "../", "." or ".." — every such crash failed open.
+  normalized = path.posix.normalize(normalized);
 
   // Strip leading / for absolute paths (ignore lib requires relative paths)
   while (normalized.startsWith('/')) {
@@ -150,8 +149,8 @@ function matchPath(matcher, testPath) {
     normalized = normalized.slice(3);
   }
 
-  // Empty after normalization = not a blockable path
-  if (!normalized) {
+  // Empty, "." or ".." after normalization = not a blockable path
+  if (!normalized || normalized === '.' || normalized === '..') {
     return { blocked: false };
   }
 
