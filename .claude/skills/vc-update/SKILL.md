@@ -267,7 +267,7 @@ For each entry in `symlinks`:
 
 **Part D — Safe legacy layout migration**:
 
-> **Sequencing — safe-migration (Part D) RUNS BEFORE legacyDeletions are applied.** This ordering ensures user report/reference content is moved into task folders *before* the deprecated layout dirs (e.g. `process/general-plans/reports`, `process/_seeds/.../references`) are removed by the manifest's `legacyDeletions` pass. Never delete a deprecated layout dir until Part D has migrated its safe contents — otherwise user content would be lost.
+> **Sequencing — safe-migration (Part D) RUNS BEFORE legacyDeletions are applied.** This ordering ensures user report/reference content is moved into task folders *before* the deprecated layout dirs (e.g. `process/general-plans/reports`, `process/_seeds/.../references`) are removed by the manifest's `legacyDeletions` pass. Never delete a deprecated layout dir until Part D has migrated its safe contents — otherwise user content would be lost. Note: `compute-sync-plan.mjs` only deletes `legacyDeletions` inside the kit namespace (`isKitOwned`: `process/_seeds/`, `.claude/skills/vc-*`, …); `process/general-plans/{reports,references}` is outside it, so vc-update leaves those dirs in place (empty after Part D) and `install.sh` removes them only when empty.
 
 After the harness files and symlinks are updated, migrate safe old-layout process artifacts into task folders:
 

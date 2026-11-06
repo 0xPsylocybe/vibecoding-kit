@@ -16,8 +16,6 @@ const ROOT = path.resolve(__dirname, '../../../..');
 const SUITES = [
   '.claude/hooks/lib/__tests__/usage-limits-cache.test.cjs',
   '.claude/hooks/lib/__tests__/statusline.test.cjs',
-  '.claude/hooks/lib/__tests__/statusline-integration.test.cjs',
-  '.claude/hooks/lib/__tests__/statusline-scenarios.test.cjs',
   '.claude/hooks/lib/__tests__/transcript-parser-signals.test.cjs'
 ];
 

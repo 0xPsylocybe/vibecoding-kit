@@ -64,7 +64,8 @@ asyncTest('F1: assistant text spaced "PHASE_COMPLETE: PLAN"', async () => {
   const r = await parse([assistantText('Done. PHASE_COMPLETE: PLAN')]);
   assertEquals(r.phaseCompletes.length, 1, 'one phaseComplete');
   assertDeepEquals(r.phaseCompletes[0], {
-    phase: 'PLAN', source: 'assistant', raw: 'PHASE_COMPLETE: PLAN', index: 0
+    phase: 'PLAN', source: 'assistant', raw: 'PHASE_COMPLETE: PLAN', index: 0,
+    agentId: null
   }, 'F1 element');
 });
 
@@ -135,8 +136,10 @@ asyncTest('F6: ordered RESEARCH→SPEC→INNOVATE across mixed sources, monotoni
   assertEquals(r.phaseCompletes[1].source, 'user', 'second source');
   assertEquals(r.phaseCompletes[2].source, 'tool_result', 'third source');
   assertEquals(r.phaseCompletes[0].index, 0, 'index 0');
-  assertEquals(r.phaseCompletes[1].index, 1, 'index 1');
-  assertEquals(r.phaseCompletes[2].index, 2, 'index 2');
+  // chatMessages share the global _signalIndex: each text block also takes one index
+  // (RESEARCH 0, its chatMessage 1, SPEC 2, its chatMessage 3, INNOVATE 4 from tool_result).
+  assertEquals(r.phaseCompletes[1].index, 2, 'index 2');
+  assertEquals(r.phaseCompletes[2].index, 4, 'index 4');
 });
 
 // F7 — TeamCreate tool_use
@@ -148,7 +151,7 @@ asyncTest('F7: TeamCreate tool_use → teamCreates[0] {team_name, id, index}', a
     }
   }]);
   assertEquals(r.teamCreates.length, 1, 'one teamCreate');
-  assertDeepEquals(r.teamCreates[0], { team_name: 'vc-rh-plan', id: 'toolu_y', index: 0 }, 'F7 element');
+  assertDeepEquals(r.teamCreates[0], { team_name: 'vc-rh-plan', id: 'toolu_y', index: 0, agentId: null }, 'F7 element');
 });
 
 // F7b — TaskCreate tool_use: taskCreates populated AND legacy todos[] still populated
@@ -160,7 +163,7 @@ asyncTest('F7b: TaskCreate → taskCreates[0] {id,index} AND legacy todos[] stil
     }
   }]);
   assertEquals(r.taskCreates.length, 1, 'one taskCreate');
-  assertDeepEquals(r.taskCreates[0], { id: 'toolu_t', index: 0 }, 'F7b taskCreates element');
+  assertDeepEquals(r.taskCreates[0], { id: 'toolu_t', index: 0, agentId: null }, 'F7b taskCreates element');
   // legacy todos[] untouched
   assertEquals(r.todos.length, 1, 'legacy todos still populated');
   assertEquals(r.todos[0].content, 'do the thing', 'legacy todo content preserved');
@@ -180,7 +183,8 @@ asyncTest('F8: SendMessage (with summary) → sendMessages[0] {to,summary,id,ind
   }]);
   assertEquals(r.sendMessages.length, 1, 'one sendMessage');
   assertDeepEquals(r.sendMessages[0], {
-    to: 'researcher', summary: 'assign task 1', id: 'toolu_z', index: 0
+    to: 'researcher', summary: 'assign task 1', id: 'toolu_z', index: 0,
+    agentId: null
   }, 'F8 element');
 });
 
@@ -214,7 +218,8 @@ asyncTest('F10: Write tool_use → writes[0] {file_path,id,index} via extractTar
   }]);
   assertEquals(r.writes.length, 1, 'one write');
   assertDeepEquals(r.writes[0], {
-    file_path: 'process/x/X_SPEC_09-06-26.md', id: 'toolu_w', index: 0
+    file_path: 'process/x/X_SPEC_09-06-26.md', id: 'toolu_w', index: 0,
+    agentId: null
   }, 'F10 element');
   // Write still registers in .tools (unchanged behavior)
   assertEquals(r.tools.length, 1, 'Write still in tools[]');
@@ -234,7 +239,8 @@ asyncTest('F11: Task → agentSpawns[0] {subagent_type,id,index} AND legacy agen
   }]);
   assertEquals(r.agentSpawns.length, 1, 'one agentSpawn');
   assertDeepEquals(r.agentSpawns[0], {
-    subagent_type: 'vc-research-agent', model: null, id: 'toolu_x', index: 0
+    subagent_type: 'vc-research-agent', model: null, id: 'toolu_x', index: 0,
+    agentId: null
   }, 'F11 agentSpawns element');
   // legacy agents[] map view unchanged
   assertEquals(r.agents.length, 1, 'legacy agents[] populated');
@@ -258,7 +264,8 @@ asyncTest('F11b: Agent (live tool name) → agentSpawns[0] with model captured',
   }]);
   assertEquals(r.agentSpawns.length, 1, 'one agentSpawn via Agent name');
   assertDeepEquals(r.agentSpawns[0], {
-    subagent_type: 'vc-research-agent', model: 'sonnet', id: 'toolu_ag', index: 0
+    subagent_type: 'vc-research-agent', model: 'sonnet', id: 'toolu_ag', index: 0,
+    agentId: null
   }, 'F11b agentSpawns element (model captured)');
   assertEquals(r.agents[0].type, 'vc-research-agent', 'F11b legacy agents[0].type');
 });
@@ -339,7 +346,8 @@ asyncTest('F15: direct processEntry call (bare result) → no throw; clean numer
   assertTrue(!Number.isNaN(result.phaseCompletes[0].index), 'index not NaN');
   assertEquals(result.agentSpawns.length, 1, 'one agentSpawn via direct call');
   // index monotonic across both signals (text scanned before tool_use in loop order)
-  assertEquals(result.agentSpawns[0].index, 1, 'agentSpawn index 1 (after phaseComplete 0)');
+  // phaseComplete 0, its chatMessage 1 (shared _signalIndex), then the agentSpawn
+  assertEquals(result.agentSpawns[0].index, 2, 'agentSpawn index 2 (after phaseComplete 0 + chatMessage 1)');
 });
 
 // F16 — Bash tool_use → bashCommands[0] {command,id,index}; tools[] still populated;
@@ -351,7 +359,8 @@ asyncTest('F16: Bash tool_use → bashCommands[0] {command,id,index} AND tools[]
   ]);
   assertEquals(r.bashCommands.length, 1, 'one bashCommand');
   assertDeepEquals(r.bashCommands[0], {
-    command: 'node .claude/skills/vc-audit-vc/scripts/validate-skills.mjs', id: 'bsh1', index: 0
+    command: 'node .claude/skills/vc-audit-vc/scripts/validate-skills.mjs', id: 'bsh1', index: 0,
+    agentId: null
   }, 'F16 bashCommands element');
   // legacy tools[] map view still captures Bash
   assertEquals(r.tools.length, 1, 'legacy tools[] populated with Bash');
@@ -407,7 +416,8 @@ asyncTest('F21: control token + phaseComplete share one monotonic index sequence
   assertEquals(r.controlTokens.length, 1, 'one controlToken');
   assertEquals(r.phaseCompletes.length, 1, 'one phaseComplete');
   assertEquals(r.controlTokens[0].index, 0, 'control token first → index 0');
-  assertEquals(r.phaseCompletes[0].index, 1, 'phaseComplete after → index 1');
+  // control token 0, its chatMessage 1 (shared _signalIndex), then the phaseComplete
+  assertEquals(r.phaseCompletes[0].index, 2, 'phaseComplete after → index 2');
 });
 
 // F22 — PHASE_COMPLETE is NOT double-captured as a control token (allowlist excludes it)

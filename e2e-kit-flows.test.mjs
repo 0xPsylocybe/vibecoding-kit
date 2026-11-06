@@ -3,7 +3,7 @@
  * e2e-kit-flows.test.mjs
  * Four end-to-end trials for vibecode-pro-max-kit v3.0.0.
  * Uses Node built-in node:test — no external test dependencies.
- * ALL writes go to /tmp — never touches the target/source repo.
+ * ALL writes go to os.tmpdir() — never touches the target/source repo.
  *
  * Run: node e2e-kit-flows.test.mjs
  * Or:  node --test e2e-kit-flows.test.mjs
@@ -15,14 +15,22 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { isKitOwned } from './compute-sync-plan.mjs';
 
-const KIT_PATH = process.env.VC_KIT_SOURCE
-  ?? path.dirname(new URL(import.meta.url).pathname);
+// VC_KIT_SOURCE is honored only when it is a local kit checkout: an installed project exports
+// it as the remote git URL, which would otherwise leak into the trials. fileURLToPath (not
+// URL.pathname, which yields "/C:/..." on Windows) gives a usable path on every OS.
+const envKit = process.env.VC_KIT_SOURCE;
+const KIT_PATH = envKit && fs.existsSync(path.join(envKit, 'vc-manifest.json'))
+  ? envKit
+  : path.dirname(fileURLToPath(import.meta.url));
 const INSTALL_SH = path.join(KIT_PATH, 'install.sh');
 
 /**
- * Create a fresh /tmp project directory, optionally seeded with fixtures.
+ * Create a fresh temp project directory (os.tmpdir()), optionally seeded with fixtures.
  * CRITICAL: every project is git-initialized so discover-skills.mjs (git rev-parse) works.
  * Returns the project path. Caller is responsible for cleanup.
  *
@@ -31,7 +39,7 @@ const INSTALL_SH = path.join(KIT_PATH, 'install.sh');
  * @returns {string} projectPath
  */
 function seedProject(opts) {
-  const projectPath = fs.mkdtempSync('/tmp/vc-e2e-');
+  const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'vc-e2e-'));
 
   // Every project needs git init — discover-skills.mjs runs git rev-parse
   execSync('git init -q', { cwd: projectPath });
@@ -262,19 +270,18 @@ test('Trial C: v2.x to v3 migration via install', async () => {
       'AC-7: user tool byte-identical after migration install'
     );
 
-    // AC-5: legacyDeletions audit — every path must start with a kit-owned prefix
+    // AC-5: legacyDeletions audit — every entry must be either kit-owned (the guard
+    // compute-sync-plan applies) or a deprecated process layout dir (reports/references),
+    // which install.sh only removes when EMPTY and vc-update Part D migrates first.
+    const isGuardedLayoutDir = (p) => /^process\/(.+\/)?(reports|references)$/.test(p);
     const manifest = JSON.parse(
       fs.readFileSync(path.join(KIT_PATH, 'vc-manifest.json'), 'utf8')
     );
     const legacyDeletions = manifest.legacyDeletions || [];
     for (const p of legacyDeletions) {
-      const isKitOwned =
-        p.startsWith('.claude/skills/vc-') ||
-        p.startsWith('.claude/agents/vc-') ||
-        p.startsWith('process/development-protocols/');
       assert.ok(
-        isKitOwned,
-        `AC-5: legacyDeletion '${p}' must start with .claude/skills/vc-, .claude/agents/vc-, or process/development-protocols/`
+        isKitOwned(p) || isGuardedLayoutDir(p),
+        `AC-5: legacyDeletion '${p}' is neither kit-owned (compute-sync-plan isKitOwned) nor a guarded process/**/reports|references layout dir`
       );
     }
   } finally {
@@ -327,7 +334,7 @@ test('Trial D: publish dry-run — no git push occurs without explicit approval'
   );
 
   // Proxy: run compute-sync-plan.mjs in publish direction and assert git state unchanged
-  const tmpKitClone = fs.mkdtempSync('/tmp/vc-e2e-publish-');
+  const tmpKitClone = fs.mkdtempSync(path.join(os.tmpdir(), 'vc-e2e-publish-'));
   try {
     // Clone the local kit to a tmpdir (simulates kitRepoPath in vc-publish)
     execSync(`git clone --local --quiet "${KIT_PATH}" "${tmpKitClone}"`, {

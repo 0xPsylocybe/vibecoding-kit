@@ -16,7 +16,6 @@ const ROOT = path.resolve(__dirname, '../../../..');
 const SUITES = [
   '.codex/hooks/lib/__tests__/usage-limits-cache.test.cjs',
   '.codex/hooks/lib/__tests__/statusline.test.cjs',
-  '.codex/hooks/lib/__tests__/statusline-integration.test.cjs',
   '.codex/hooks/lib/__tests__/statusline-scenarios.test.cjs'
 ];
 

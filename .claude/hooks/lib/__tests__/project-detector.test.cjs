@@ -224,7 +224,8 @@ describe('getGitBranch', () => {
   });
 
   test('returns null for non-git directory (no git command executed)', () => {
-    process.chdir('/tmp');
+    // os.tmpdir(): '/tmp' does not exist on Windows
+    process.chdir(os.tmpdir());
     // This should NOT execute git command, just return null from isGitRepo check
     const result = getGitBranch();
     expect(result).toBe(null);
@@ -586,7 +587,8 @@ describe('detectFramework', () => {
 
 describe('execSafe', () => {
   test('returns output for successful command', () => {
-    const result = execSafe('echo "hello"');
+    // node -p instead of echo: cmd.exe's echo keeps the quotes, so echo is not portable
+    const result = execSafe('node -p "\'hello\'"');
     expect(result).toBe('hello');
   });
 
@@ -602,12 +604,12 @@ describe('execSafe', () => {
   });
 
   test('trims output', () => {
-    const result = execSafe('echo "  hello  "');
+    const result = execSafe('node -p "\'  hello  \'"');
     expect(result).toBe('hello');
   });
 
   test('handles newlines in output', () => {
-    const result = execSafe('echo "line1\nline2"');
+    const result = execSafe('node -p "\'line1\\nline2\'"');
     expect(result).toBe('line1\nline2');
   });
 });

@@ -45,6 +45,15 @@ function assertEquals(actual, expected, msg = '') {
   }
 }
 
+// Path equality, not string equality: on Windows path.join/resolve use "\\" and git
+// prints "C:/...", while the expectations are written POSIX-style.
+function assertSamePath(actual, expected, msg = '') {
+  const same = typeof actual === 'string' && path.resolve(actual) === path.resolve(expected);
+  if (!same) {
+    throw new Error(`${msg}\n  Expected path: ${JSON.stringify(expected)}\n  Actual: ${JSON.stringify(actual)}`);
+  }
+}
+
 function canonicalPath(pathValue) {
   return fs.realpathSync(pathValue);
 }
@@ -195,7 +204,7 @@ test('getReportsPath returns absolute path when baseDir provided', () => {
   const baseDir = '/home/user/project';
 
   const result = getReportsPath(null, null, planConfig, pathsConfig, baseDir);
-  assertEquals(result, '/home/user/project/reports');
+  assertSamePath(result, '/home/user/project/reports');
 });
 
 test('getReportsPath returns relative path when no baseDir', () => {
@@ -212,7 +221,7 @@ test('getReportsPath uses plan path for session-resolved plans', () => {
   const baseDir = '/home/user/project';
 
   const result = getReportsPath('plans/my-plan', 'session', planConfig, pathsConfig, baseDir);
-  assertEquals(result, '/home/user/project/plans/my-plan/reports');
+  assertSamePath(result, '/home/user/project/plans/my-plan/reports');
 });
 
 test('getReportsPath ignores plan path for branch-resolved plans', () => {
@@ -221,7 +230,7 @@ test('getReportsPath ignores plan path for branch-resolved plans', () => {
   const baseDir = '/home/user/project';
 
   const result = getReportsPath('plans/my-plan', 'branch', planConfig, pathsConfig, baseDir);
-  assertEquals(result, '/home/user/project/reports');
+  assertSamePath(result, '/home/user/project/reports');
 });
 
 console.log('\n=== getGitRoot/getGitBranch with cwd parameter (Issue #291) ===\n');
@@ -317,7 +326,7 @@ test('getReportsPath does not double-join when planPath is already absolute (Iss
 
   const result = getReportsPath(absolutePlanPath, 'session', planConfig, pathsConfig, baseDir);
   // Should NOT produce /home/user/project/home/user/project/plans/my-plan/reports
-  assertEquals(result, '/home/user/project/plans/my-plan/reports');
+  assertSamePath(result, '/home/user/project/plans/my-plan/reports');
 });
 
 console.log('\n=== getReportsPath edge cases ===\n');
@@ -328,7 +337,7 @@ test('getReportsPath with empty reportsDir falls back to "reports"', () => {
   const baseDir = '/home/user/project';
 
   const result = getReportsPath(null, null, planConfig, pathsConfig, baseDir);
-  assertEquals(result, '/home/user/project/reports');
+  assertSamePath(result, '/home/user/project/reports');
 });
 
 test('getReportsPath with null reportsDir falls back to "reports"', () => {
@@ -337,7 +346,7 @@ test('getReportsPath with null reportsDir falls back to "reports"', () => {
   const baseDir = '/home/user/project';
 
   const result = getReportsPath(null, null, planConfig, pathsConfig, baseDir);
-  assertEquals(result, '/home/user/project/reports');
+  assertSamePath(result, '/home/user/project/reports');
 });
 
 test('getReportsPath with empty plansDir falls back to "plans"', () => {
@@ -346,7 +355,7 @@ test('getReportsPath with empty plansDir falls back to "plans"', () => {
   const baseDir = '/home/user/project';
 
   const result = getReportsPath(null, null, planConfig, pathsConfig, baseDir);
-  assertEquals(result, '/home/user/project/reports');
+  assertSamePath(result, '/home/user/project/reports');
 });
 
 test('getReportsPath with null plansDir falls back to "plans"', () => {
@@ -355,7 +364,7 @@ test('getReportsPath with null plansDir falls back to "plans"', () => {
   const baseDir = '/home/user/project';
 
   const result = getReportsPath(null, null, planConfig, pathsConfig, baseDir);
-  assertEquals(result, '/home/user/project/reports');
+  assertSamePath(result, '/home/user/project/reports');
 });
 
 console.log('\n=== sanitizeConfig tests ===\n');
@@ -391,7 +400,7 @@ test('path.join concatenates paths (does NOT discard baseDir)', () => {
   // path.join('/base', '/absolute') = '/base/absolute' (concatenates, strips leading /)
   // path.resolve('/base', '/absolute') = '/absolute' (absolute overrides)
   const result = path.join('/home/user/project', '/tmp/all-plans');
-  assertEquals(result, '/home/user/project/tmp/all-plans');
+  assertSamePath(result, '/home/user/project/tmp/all-plans');
 });
 
 console.log('\n=== Detached HEAD state tests ===\n');
@@ -437,7 +446,7 @@ test('getGitRoot works in detached HEAD state', () => {
 
     // getGitRoot should still work
     const result = getGitRoot(tempDir);
-    assertEquals(result, canonicalPath(tempDir));
+    assertSamePath(result, canonicalPath(tempDir));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -491,11 +500,11 @@ test('getGitRoot returns innermost repo for nested git repos', () => {
 
     // From inner dir, should return inner repo root
     const resultInner = getGitRoot(innerDir);
-    assertEquals(resultInner, canonicalPath(innerDir));
+    assertSamePath(resultInner, canonicalPath(innerDir));
 
     // From outer dir, should return outer repo root
     const resultOuter = getGitRoot(outerDir);
-    assertEquals(resultOuter, canonicalPath(outerDir));
+    assertSamePath(resultOuter, canonicalPath(outerDir));
   } finally {
     fs.rmSync(outerDir, { recursive: true, force: true });
   }
@@ -512,7 +521,7 @@ test('getGitRoot from nested subdir returns correct root', () => {
 
     // From deep subdir inside inner repo
     const result = getGitRoot(deepDir);
-    assertEquals(result, canonicalPath(innerDir));
+    assertSamePath(result, canonicalPath(innerDir));
   } finally {
     fs.rmSync(outerDir, { recursive: true, force: true });
   }
@@ -586,7 +595,7 @@ test('getGitRoot works with git worktree', () => {
 
     // getGitRoot from worktree should return worktree path
     const result = getGitRoot(worktreeDir);
-    assertEquals(result, canonicalPath(worktreeDir));
+    assertSamePath(result, canonicalPath(worktreeDir));
 
     // Cleanup worktree
     execSync(`git worktree remove -f "${worktreeDir}"`, { cwd: mainDir });
@@ -605,7 +614,7 @@ test('getGitRoot works with unicode characters in path', () => {
     execSync('git init -q', { cwd: tempDir });
 
     const result = getGitRoot(tempDir);
-    assertEquals(result, canonicalPath(tempDir));
+    assertSamePath(result, canonicalPath(tempDir));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -642,7 +651,7 @@ test('getGitRoot works with special shell characters in path', () => {
     execSync('git init -q', { cwd: tempDir });
 
     const result = getGitRoot(tempDir);
-    assertEquals(result, canonicalPath(tempDir));
+    assertSamePath(result, canonicalPath(tempDir));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -658,7 +667,7 @@ test('getGitRoot works on new repo with no commits', () => {
 
     // No commits yet
     const result = getGitRoot(tempDir);
-    assertEquals(result, canonicalPath(tempDir));
+    assertSamePath(result, canonicalPath(tempDir));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -705,7 +714,7 @@ test('resolvePlanPath returns absolute path as-is (Issue #335)', () => {
     const result = resolvePlanPath(sessionId, config);
 
     assertEquals(result.resolvedBy, 'session');
-    assertEquals(result.path, '/project/subfolder/plans/260111-feature');
+    assertSamePath(result.path, '/project/subfolder/plans/260111-feature');
   } finally {
     cleanupSession(sessionId);
   }
@@ -726,7 +735,7 @@ test('resolvePlanPath resolves relative path using sessionOrigin (Issue #335)', 
 
     assertEquals(result.resolvedBy, 'session');
     // Should resolve using sessionOrigin
-    assertEquals(result.path, '/project/subfolder/plans/260111-feature');
+    assertSamePath(result.path, '/project/subfolder/plans/260111-feature');
   } finally {
     cleanupSession(sessionId);
   }
