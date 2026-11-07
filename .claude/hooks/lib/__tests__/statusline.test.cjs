@@ -52,6 +52,17 @@ let passed = 0;
 let failed = 0;
 const failures = [];
 
+// The fake `git` below is an extensionless sh script: Windows cannot execute it, so the real
+// git answers and the timeout path is never hit. The logic is OS-independent and the Debian CI
+// job covers it, so these cases run on POSIX only (and say so on Windows).
+function posixOnlyTest(name, fn) {
+  if (process.platform === 'win32') {
+    console.log(`- skipped on Windows (POSIX-only fake git): ${name}`);
+    return;
+  }
+  test(name, fn);
+}
+
 function test(name, fn) {
   try {
     fn();
@@ -768,7 +779,7 @@ test('processEntry hydrates native task id from TaskCreate tool_result', () => {
   assertEquals(latestTodos[0].activeForm, 'Working task one', 'TaskUpdate should refresh activeForm');
 });
 
-test('getGitInfo timeout does not cache null result', () => {
+posixOnlyTest('getGitInfo timeout does not cache null result', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'git-timeout-no-cache-'));
   const fakeBinDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fake-git-bin-'));
   const fakeGit = path.join(fakeBinDir, 'git');
@@ -786,7 +797,7 @@ test('getGitInfo timeout does not cache null result', () => {
   try {
     try { fs.unlinkSync(cachePath); } catch {}
     invalidateCache(tmpDir);
-    process.env.PATH = `${fakeBinDir}:${originalPath || ''}`;
+    process.env.PATH = `${fakeBinDir}${path.delimiter}${originalPath || ''}`;
     process.env.CK_GIT_TIMEOUT_MS = '50';
 
     const result = getGitInfo(tmpDir);
@@ -804,7 +815,7 @@ test('getGitInfo timeout does not cache null result', () => {
   }
 });
 
-test('getGitInfo timeout reuses stale cache when available', () => {
+posixOnlyTest('getGitInfo timeout reuses stale cache when available', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'git-timeout-stale-'));
   const fakeBinDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fake-git-bin-'));
   const fakeGit = path.join(fakeBinDir, 'git');
@@ -825,7 +836,7 @@ test('getGitInfo timeout reuses stale cache when available', () => {
       cachePath,
       JSON.stringify({ timestamp: Date.now() - 120000, data: staleData })
     );
-    process.env.PATH = `${fakeBinDir}:${originalPath || ''}`;
+    process.env.PATH = `${fakeBinDir}${path.delimiter}${originalPath || ''}`;
     process.env.CK_GIT_TIMEOUT_MS = '50';
 
     const result = getGitInfo(tmpDir);

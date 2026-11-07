@@ -48,7 +48,10 @@ function assertEquals(actual, expected, msg = '') {
 // Path equality, not string equality: on Windows path.join/resolve use "\\" and git
 // prints "C:/...", while the expectations are written POSIX-style.
 function assertSamePath(actual, expected, msg = '') {
-  const same = typeof actual === 'string' && path.resolve(actual) === path.resolve(expected);
+  // realpathSync.native also expands Windows 8.3 short names (C:\\Users\\RUNNER~1 vs
+  // runneradmin on GitHub runners); fall back to resolve() for paths that do not exist.
+  const canon = (p) => { try { return fs.realpathSync.native(p); } catch { return path.resolve(p); } };
+  const same = typeof actual === 'string' && canon(actual) === canon(expected);
   if (!same) {
     throw new Error(`${msg}\n  Expected path: ${JSON.stringify(expected)}\n  Actual: ${JSON.stringify(actual)}`);
   }
