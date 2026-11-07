@@ -1,92 +1,39 @@
-# Statusline Test Suite
+# Hook Library Tests
 
-Comprehensive tests for `.claude/statusline.cjs` and supporting libraries.
+Unit tests for the shared hook libraries in `.claude/hooks/lib/`.
 
 ## Files
 
-- `usage-limits-cache.test.cjs` - Unit tests for the usage quota cache helper (5 tests)
-- `statusline.test.cjs` - Unit/regression tests for helpers and parser logic (57 tests)
-- `statusline-integration.test.cjs` - End-to-end rendering tests for `statusline.cjs` (30 tests)
-- `statusline-scenarios.test.cjs` - Cross-platform and user workflow scenarios (19 tests)
-- `transcript-parser-signals.test.cjs` - Additive run-record signal extraction in `transcript-parser.cjs` (vc-runtime-harness Phase 2: phaseCompletes/agentSpawns/teamCreates/taskCreates/sendMessages/writes; fixtures F1–F15)
-- `statusline-suite.cjs` - Aggregate runner for all statusline suites
-- `vc-config-utils.test.cjs` - Existing config utility coverage
+- `context-builder.test.cjs` - session context assembly
+- `privacy-checker.test.cjs` - privacy-block path extraction (real `.env` files blocked, `process.env.X` allowed)
+- `project-detector.test.cjs` - project / git / Python detection helpers
+- `statusline.test.cjs` - helpers and parser logic shared with the statusline (colors, context bar, transcript parsing, usage cache rendering)
+- `transcript-parser-signals.test.cjs` - run-record signal extraction in `transcript-parser.cjs` (phaseCompletes, agentSpawns, teamCreates, taskCreates, sendMessages, writes, controlTokens; one global `_signalIndex`)
+- `usage-limits-cache.test.cjs` - usage quota cache helper
+- `vc-config-utils.test.cjs` - config, path sanitizing, git root and plan resolution
+- `statusline-suite.cjs` - aggregate runner for the statusline-related suites
+
+The former `statusline-integration` / `statusline-scenarios` suites were removed: they exercised a
+`.claude/statusline.cjs` entrypoint that the kit does not ship.
 
 ## Running Tests
 
-```bash
-# From repository root
-node .claude/hooks/lib/__tests__/statusline-suite.cjs
-```
-
-Run individual suites when debugging:
+All kit tests (hooks, skill script tests, e2e) on any OS — this is what CI runs on Windows and Debian:
 
 ```bash
-node .claude/hooks/lib/__tests__/usage-limits-cache.test.cjs
-node .claude/hooks/lib/__tests__/statusline.test.cjs
-node .claude/hooks/lib/__tests__/statusline-integration.test.cjs
-node .claude/hooks/lib/__tests__/statusline-scenarios.test.cjs
+node .github/scripts/run-kit-tests.mjs
 ```
 
-## Current Coverage Scope
+A single suite:
 
-### Usage Cache Helper (`usage-limits-cache.test.cjs`)
-- live OAuth whole-number percentage handling plus defensive `0..1` fallback
-- additive `snapshot` generation for cosmetic `5h` / `wk` chips
-- cache age helpers that keep refresh work off the render path
-- success and failure writes for the shared quota cache file
+```bash
+node .claude/hooks/lib/__tests__/vc-config-utils.test.cjs
+```
 
-### Unit and Regression (`statusline.test.cjs`)
-- color behavior and ANSI toggles (`NO_COLOR`, `FORCE_COLOR`)
-- context thresholds and bar rendering
-- transcript parsing and target extraction
-- native task mapping (`TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList`)
-- stdin timeout and fallback behavior
-- usage cache parse and render behavior
-- git info cache timeout race regressions
+## Portability Rules
 
-### End-to-End (`statusline-integration.test.cjs`)
-- minimal/default payload rendering
-- git workspace behavior
-- context usage and cost display paths
-- invalid/empty input fallback handling
-- home path shortening and multi-line behavior
-- environment behavior (`NO_COLOR`, billing mode)
+Tests run on Windows (Git Bash) and Debian in CI, so:
 
-### Scenario Suite (`statusline-scenarios.test.cjs`)
-- Linux/macOS/Windows/UNC/WSL path rendering
-- statusline modes (`none`, `minimal`, `compact`, default/full)
-- delayed stdin and optional timeout (`CK_STATUSLINE_STDIN_TIMEOUT_MS`)
-- normalized snapshot rendering, legacy raw cache fallback, and unavailable cache behavior
-- display remaining visible when `usage-context-awareness` is disabled
-- native task transcript flows and legacy TodoWrite coexistence
-- terminal width wrapping (wide + narrow unicode paths)
-
-## Latest Verified Result
-
-- total tests: 111
-- passed: 111
-- failed: 0
-- suites run: 4
-
-## Maintenance
-
-When changing statusline logic:
-
-1. Update/add tests in the relevant suite.
-2. Run the aggregate suite:
-   ```bash
-   node .claude/hooks/lib/__tests__/statusline-suite.cjs
-   ```
-3. Keep this README counts and scope notes in sync with test changes.
-
-## Related Files
-
-- `/.claude/statusline.cjs`
-- `/.claude/hooks/lib/colors.cjs`
-- `/.claude/hooks/lib/transcript-parser.cjs`
-- `/.claude/hooks/lib/config-counter.cjs`
-- `/.claude/hooks/lib/git-info-cache.cjs`
-
-**Last Updated:** 2026-02-26
-**Status:** passing
+- use `os.tmpdir()` and `path.join`, never a literal `/tmp`;
+- compare paths by equivalence (`path.resolve`), not as POSIX strings;
+- do not rely on POSIX `echo` semantics in `execSync` (Windows uses `cmd.exe`); prefer `node -p`.

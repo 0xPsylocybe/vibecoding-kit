@@ -94,7 +94,8 @@
       "allowlisted": false,
       "allowlistReason": null,
       "relativeReferences": [
-        "references/audit-context.md"
+        "references/audit-context.md",
+        "scripts/shared-skill-utils.mjs"
       ],
       "mentionedSkills": [
         "vc-scout"

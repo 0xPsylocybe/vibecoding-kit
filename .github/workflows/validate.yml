@@ -1,8 +1,12 @@
 name: Validate Kit
 
+# push to main as well as PRs: small complete changes land directly on main.
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,10 +15,39 @@ concurrency:
   group: validate-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
+# Both jobs run the same checks through .github/scripts/run-kit-tests.mjs (validators, hook and
+# skill-script tests, e2e install trials). Edit that file, not this one, to add or remove a check.
 jobs:
-  validate:
+  debian:
+    name: Debian 13 (Node 22)
     runs-on: ubuntu-latest
+    # The kit is used on Debian: run inside the official Debian 13 (trixie) Node image.
+    container: node:22-trixie
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Trust the workspace (container user differs from the checkout owner)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Validators and tests
+        run: node .github/scripts/run-kit-tests.mjs
+
+      - name: Lint Markdown (non-blocking)
+        run: npx --yes markdownlint-cli2 '**/*.md' '#node_modules' || true
+
+  windows:
+    name: Windows (Git Bash, Node 22)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Without this, git writes .agents/skills (a symlink) as a small text file and every
+      # .agents/skills check fails; the runner account can create real symlinks.
+      - name: Enable symlinks before checkout
+        run: git config --global core.symlinks true
+
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
@@ -23,65 +56,5 @@ jobs:
         with:
           node-version: 22
 
-      - name: Validate agent parity
-        run: node .claude/skills/vc-audit-vc/scripts/validate-agent-parity.mjs
-
-      - name: Validate skills
-        run: node .claude/skills/vc-audit-vc/scripts/validate-skills.mjs
-
-      - name: Validate guide sync
-        run: node .claude/skills/vc-audit-vc/scripts/validate-guide-sync.mjs
-
-      - name: Validate protocol wiring
-        run: node .claude/skills/vc-audit-vc/scripts/validate-protocol-wiring.mjs
-
-      - name: Validate seeds
-        run: node .claude/skills/vc-audit-vc/scripts/validate-seeds.mjs
-
-      - name: Validate context discovery
-        run: node .claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs
-
-      - name: Validate skill routing
-        run: node .claude/skills/vc-audit-context/scripts/validate-skill-routing.mjs
-
-      - name: Validate skill cross-refs
-        run: node .claude/skills/vc-audit-context/scripts/validate-skill-cross-refs.mjs
-
-      - name: Validate skill dependencies
-        run: node .claude/skills/vc-audit-context/scripts/validate-skill-dependencies.mjs
-
-      - name: Validate confusable skills
-        run: node .claude/skills/vc-audit-context/scripts/validate-confusable-skills.mjs
-
-      - name: Generate skills catalog
-        run: node .claude/skills/vc-audit-context/scripts/generate-skills-catalog.mjs
-
-      - name: Validate plan inventory
-        run: node .claude/skills/vc-audit-plans/scripts/validate-plan-inventory.mjs
-
-      - name: Validate all context
-        run: node .claude/skills/vc-generate-context/scripts/validate-all-context.mjs
-
-      - name: Validate skill invocation wiring
-        run: node .claude/skills/vc-audit-vc/scripts/validate-skill-invocation-wiring.mjs
-
-      - name: Validate protocol discovery
-        run: node .claude/skills/vc-audit-context/scripts/validate-protocol-discovery.mjs
-
-      - name: Validate skill keywords
-        run: node .claude/skills/vc-audit-context/scripts/validate-skill-keywords.mjs
-
-      - name: Validate plan artifacts (if any)
-        run: |
-          PLANS=$(find process/general-plans/active process/features/*/active -name '*_PLAN_*' -type f 2>/dev/null)
-          if [ -n "$PLANS" ]; then
-            echo "$PLANS" | xargs -I {} node .claude/skills/vc-generate-plan/scripts/validate-plan-artifact.mjs {}
-          else
-            echo "No active plan artifacts found, skipping."
-          fi
-
-      - name: Check for personal path leaks
-        run: node .claude/skills/vc-audit-vc/scripts/validate-kit-portability.mjs
-
-      - name: Lint Markdown (non-blocking)
-        run: npx markdownlint-cli2 '**/*.md' '#node_modules' || true
+      - name: Validators and tests
+        run: node .github/scripts/run-kit-tests.mjs
