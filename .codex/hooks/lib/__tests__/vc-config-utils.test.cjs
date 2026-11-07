@@ -58,7 +58,8 @@ function assertSamePath(actual, expected, msg = '') {
 }
 
 function canonicalPath(pathValue) {
-  return fs.realpathSync(pathValue);
+  // .native expands Windows 8.3 short names (RUNNER~1) like git does
+  return fs.realpathSync.native(pathValue);
 }
 
 console.log('\n=== normalizePath tests ===\n');
@@ -548,7 +549,7 @@ test('getGitRoot resolves through symlink to git repo', () => {
     // Git resolves to real path
     if (result !== null) {
       // Result should be the real path (symlink resolved)
-      assertEquals(fs.realpathSync(result), fs.realpathSync(realDir));
+      assertSamePath(result, realDir);
     }
   } finally {
     try { fs.unlinkSync(linkDir); } catch (e) {}
@@ -570,7 +571,7 @@ test('getGitRoot with symlinked subdirectory', () => {
     // getGitRoot from symlinked subdir should find parent repo
     const result = getGitRoot(linkToSub);
     if (result !== null) {
-      assertEquals(fs.realpathSync(result), fs.realpathSync(realDir));
+      assertSamePath(result, realDir);
     }
   } finally {
     try { fs.unlinkSync(linkToSub); } catch (e) {}
